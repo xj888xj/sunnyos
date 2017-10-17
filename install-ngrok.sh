@@ -1,13 +1,14 @@
 #!/bin/bash
 # -*- coding: UTF-8 -*-
+
 SELFPATH=$(cd "$(dirname "$0")"; pwd)
-echo '请输入一个域名'
+
+echo 'input a domain'
 read DOMAIN
-install_yilai(){
+install_depends(){
 	yum -y install zlib-devel openssl-devel perl hg cpio expat-devel gettext-devel curl curl-devel perl-ExtUtils-MakeMaker hg wget gcc gcc-c++ build-essential mercurial zip
 }
 
-# 安装git
 install_git(){
 	unstall_git
 	if [ ! -f $SELFPATH/git-2.9.5.tar.gz ];then
@@ -15,17 +16,13 @@ install_git(){
 	fi
 	tar zxvf git-2.9.5.tar.gz
 	cd git-2.9.5
-	make configure
-    ./configure --prefix=/usr/local/git --with-iconv=/usr/local/libiconv
-    make all doc
-    make install install-doc install-html
-    echo "export PATH=$PATH:/usr/local/git/bin" >> /etc/bashrc
-    source /etc/bashrc
+	./configure --prefix=/usr/local/git
+	make
+	make install
 	ln -s /usr/local/git/bin/* /usr/bin/
 	rm -rf $SELFPATH/git-2.9.5
 }
 
-# 卸载git
 unstall_git(){
 	rm -rf /usr/local/git
 	rm -rf /usr/local/git/bin/git
@@ -38,30 +35,24 @@ unstall_git(){
 }
 
 
-# 安装go
 install_go(){
 	cd $SELFPATH
 	uninstall_go
-	# 动态链接库，用于下面的判断条件生效
 	ldconfig
-	# 判断操作系统位数下载不同的安装包
 	if [ $(getconf WORD_BIT) = '32' ] && [ $(getconf LONG_BIT) = '64' ];then
-		# 判断文件是否已经存在
 		if [ ! -f $SELFPATH/go1.9.1.linux-amd64.tar.gz ];then
-			wget https://www.golangtc.com/static/go/1.9.1/go1.9.1.linux-amd64.tar.gz
+			wget http://www.golangtc.com/static/go/1.9.1/go1.9.1.linux-amd64.tar.gz
 		fi
 	    tar zxvf go1.9.1.linux-amd64.tar.gz
 	else
 		if [ ! -f $SELFPATH/go1.9.1.linux-386.tar.gz ];then
-			wget https://www.golangtc.com/static/go/1.9.1/go1.9.1.linux-386.tar.gz
+			wget http://www.golangtc.com/static/go/1.9.1/go1.9.1.linux-386.tar.gz
 		fi
 	    tar zxvf go1.9.1.linux-386.tar.gz
 	fi
 	mv go /usr/local/
 	ln -s /usr/local/go/bin/* /usr/bin/
 }
-
-# 卸载go
 
 uninstall_go(){
 	rm -rf /usr/local/go
@@ -70,13 +61,12 @@ uninstall_go(){
 	rm -rf /usr/bin/gofmt
 }
 
-# 安装ngrok
 install_ngrok(){
 	uninstall_ngrok
 	cd /usr/local
 	if [ ! -f /usr/local/ngrok ];then
 		cd /usr/local/
-		git clone https://github.com/tutumcloud/ngrok.git
+		git clone https://github.com/inconshreveable/ngrok.git ngrok
 	fi
 	export GOPATH=/usr/local/ngrok/
 	export NGROK_DOMAIN=$DOMAIN
@@ -89,17 +79,14 @@ install_ngrok(){
 	cp rootCA.pem assets/client/tls/ngrokroot.crt
 	cp server.crt assets/server/tls/snakeoil.crt
 	cp server.key assets/server/tls/snakeoil.key
-	#替换下载源地址,如果是在天朝的服务器需要改,香港或者国外的服务器不需要
 	sed -i 's#code.google.com/p/log4go#github.com/keepeye/log4go#' /usr/local/ngrok/src/ngrok/log/logger.go
-	#编译服务端和客户端
+	
 	GOOS=`go env | grep GOOS | awk -F\" '{print $2}'`
-    GOARCH=`go env | grep GOARCH | awk -F\" '{print $2}'`
+	GOARCH=`go env | grep GOARCH | awk -F\" '{print $2}'`
 	cd /usr/local/go/src
 	GOOS=$GOOS GOARCH=$GOARCH ./make.bash
 	cd /usr/local/ngrok
 	GOOS=$GOOS GOARCH=$GOARCH make release-server
-	#启动服务端
-	/usr/local/ngrok/bin/ngrokd -domain=$NGROK_DOMAIN -httpAddr=":80"
 }
 
 # 卸载ngrok
@@ -113,17 +100,18 @@ compile_client(){
 	GOOS=$1 GOARCH=$2 ./make.bash
 	cd /usr/local/ngrok/
 	GOOS=$1 GOARCH=$2 make release-client
+	zip -r /root/$1_$2.zip /usr/local/ngrok/bin/$1_$2
 }
 
 # 生成客户端
 client(){
-	echo "1、Linux 32位"
-	echo "2、Linux 64位"
-	echo "3、Windows 32位"
-	echo "4、Windows 64位"
-	echo "5、Mac OS 32位"
-	echo "6、Mac OS 64位"
-	echo "7、Linux ARM"
+	echo "1.Linux 32"
+	echo "2.Linux 64"
+	echo "3.Windows 32"
+	echo "4.Windows 64"
+	echo "5.Mac OS 32"
+	echo "6.Mac OS 64"
+	echo "7.Linux ARM"
 
 	read num
 	case "$num" in
@@ -136,44 +124,44 @@ client(){
 		[3] )
 			compile_client windows 386
 		;;
-		[4] )
+		[4] ) 
 			compile_client windows amd64
 		;;
-		[5] )
+		[5] ) 
 			compile_client darwin 386
 		;;
-		[6] )
+		[6] ) 
 			compile_client darwin amd64
 		;;
-		[7] )
+		[7] ) 
 			compile_client linux arm
 		;;
-		*) echo "选择错误，退出";;
+		*) echo "choose error";;
 	esac
 
 }
 
 echo "------------------------"
-echo "1、全新安装"
-echo "2、安装依赖"
-echo "3、安装git"
-echo "4、安装go环境"
-echo "5、安装ngrok"
-echo "6、生成客户端"
-echo "7、卸载"
-echo "8、启动服务"
-echo "9、查看配置文件"
+echo "1. install all"
+echo "2. install depends"
+echo "3. install git"
+echo "4. install go"
+echo "5. install ngrok"
+echo "6. export client"
+echo "7. uninstall all"
+echo "8. run ngrok server"
+echo "9. read config"
 echo "------------------------"
 read num
 case "$num" in
 	[1] )
-		install_yilai
+		install_depends
 		install_git
 		install_go
 		install_ngrok
 	;;
 	[2] )
-		install_yilai
+		install_depends
 	;;
 	[3] )
 		install_git
@@ -193,16 +181,12 @@ case "$num" in
 		uninstall_ngrok
 	;;
 	[8] )
-		echo "输入启动域名"
-		read domain
-		echo "启动端口"
+		echo "input port"
 		read port
-		/usr/local/ngrok/bin/ngrokd -domain=$domain -httpAddr=":$port"
+		nohup /usr/local/ngrok/bin/ngrokd -domain=$DOMAIN -httpAddr=":$port" -log="none" &
 	;;
 	[9] )
-		echo "输入启动域名"
-		read domain
-		echo server_addr: '"'$domain:4443'"'
+		echo server_addr: '"'$DOMAIN:4443'"'
 		echo "trust_host_root_certs: false"
 
 	;;

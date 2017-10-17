@@ -6,9 +6,18 @@ go：/usr/local/go
 ngrok：/usr/local/ngrok  
 
 #使用说明：
+
 	chmod +x ngrok.sh  
 	sh ./ngrok.sh  
-进行选择，安装
+
+	进行选择，安装
+
+
+脚本地址：
+https://github.com/sunnyos/ngrok
+
+用法：git clone https://github.com/sunnyos/ngrok
+然后参照上面说明。
 
 #客户端编译好存放的路径：
 	/usr/local/ngrok/bin/  
