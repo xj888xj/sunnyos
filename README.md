@@ -5,12 +5,13 @@ git：/usr/local/git
 go：/usr/local/go  
 ngrok：/usr/local/ngrok  
 
-#使用说明：
+#使用说明:
 
-	chmod +x ngrok.sh  
-	sh ./ngrok.sh  
+wget --no-check-certificate https://github.com/xj888xj/sunnyos/blob/master/install-ngrok.sh -O ./install-ngrok.sh
+chmod +x ngrok.sh  
+sh ./ngrok.sh  
 
-	进行选择，安装
+进行选择，安装
 
 
 脚本地址：
