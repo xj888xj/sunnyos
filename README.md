@@ -9,7 +9,7 @@ ngrok：/usr/local/ngrok
 
 wget --no-check-certificate https://github.com/xj888xj/sunnyos/blob/master/install-ngrok.sh -O ./install-ngrok.sh
 chmod +x ngrok.sh  
-sh ./ngrok.sh  
+sh ./install-ngrok.sh  
 
 进行选择，安装
 
