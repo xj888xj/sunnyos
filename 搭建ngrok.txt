@@ -1,0 +1,162 @@
+获取源代码
+
+我们首先要在本地机器上部署编译环境：
+
+sudo apt-get install build-essential golang mercurial git
+然后获取源代码：
+
+git clone https://github.com/inconshreveable/ngrok.git
+这样会把源代码克隆岛ngrok目录下，我们切换一下目录：
+
+cd ngrok
+创建证书
+
+因为ngrok的隧道是通过TLS传输数据的，我们可以用默认的证书，但这样谁都可以连接你的服务器了，所以我们要自己创建证书。
+
+以下代码在本机一条一条地执行。第一条中的example.com记得改成你自己的域名。
+
+NGROK_DOMAIN="example.com"
+openssl genrsa -out base.key 2048
+openssl req -new -x509 -nodes -key base.key -days 10000 -subj "/CN=$NGROK_DOMAIN" -out base.pem
+openssl genrsa -out server.key 2048
+openssl req -new -key server.key -subj "/CN=$NGROK_DOMAIN" -out server.csr
+openssl x509 -req -in server.csr -CA base.pem -CAkey base.key -CAcreateserial -days 10000 -out server.crt
+我们需要的是server.key、server.crt和base.pem三个文件。我们要放到对应的目录里：
+
+cp server.key assets/server/tls/snakeoil.key
+cp server.crt assets/server/tls/snakeoil.crt
+cp base.pem assets/client/tls/ngrokroot.crt
+修改代码
+
+因为ngrok会默认监听IPv6端口，考虑到国内的网络环境，我们需要修改一下代码，否则将无法使用。主要修改两个地方，一个是src/ngrok/server/tunnel.go的109行net.ListenTCP后面的"tcp"改成"tcp4"，另一处是src/ngrok/conn/conn.go的57行的net.Listen后的"tcp"同样改成"tcp4"。
+
+编译
+
+编译很简单，我们首先通过GOOS和GOARCH两个变量指定编译的目标系统和目标架构，目标系统有darwin（即OS X）、freebsd和linux，目标架构有386（32位系统）、amd64（64位系统）和arm（ARM嵌入式系统）。然后再通过server、client或release-server、release-client来指定编译的是客户端还是服务器端。有没有release的区别是，包含release的编译结果会把assets目录下的内容包括进去，从而可以独立执行。如果你今后还要更换证书，建议编译不包含release的版本。
+
+以下代码都在本机执行。
+
+编译服务器：
+
+GOOS=linux GOARCH=amd64 make release-server
+得到的服务器文件是bin/ngrokd。
+
+编译客户端，因为我的NAS是ARM架构的所以如下，各位请按自己的需求编译：
+
+GOOS=linux GOARCH=arm make release-client
+得到的客户端文件是bin/linux_arm/ngrok。
+
+不同系统或架构编译得到的文件位置可能不同，但都在bin目录下，并且文件名服务器是ngrokd客户端是ngrok，下面请根据实际情况操作。
+
+配置服务器
+
+首先把文件复制到服务器上。请选择你熟悉的手段。我是直接scp上传：
+
+scp bin/ngrokd example.com:~
+然后就要到服务器上操作了，通过SSH连接到服务器上。
+
+首先把文件放到/opt/ngrokd目录下（这步可根据你的习惯来）：
+
+sudo mkdir /opt/ngrokd
+sudo cp ngrokd /opt/ngrokd/
+然后我们就要建立服务了。我使用的是Ubuntu 16.04 LTS，所以用systemd很简单，把如下内容保存到/lib/systemd/system/ngrokd.service这个文件（自己创建）：
+
+[Unit]
+Description=ngrok server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/ngrokd/ngrokd -domain example.com -httpAddr "" -httpsAddr "" -tunnelAddr ":4443" -log "/var/log/ngrokd.log"
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+其中ExecStart这一项后面就是我们ngrokd执行命令了。参数-domain表示服务器域名，请改成你自己的域名；-httpAddr表示默认监听的HTTP端口，-httpsAddr表示默认监听的HTTPS端口，因为我用不到所以都设置成空字符串""来关闭监听，如果需要打开的话记得格式是:12345（冒号+端口号）这样的；-tunnelAddr表示服务器监听客户端连接的隧道端口号，格式和前面一样；-log表示日志文件位置；还有个-log-level用来控制日志记录的事件级别，选项有DEBUG、INFO、WARNING、ERROR。
+
+如果编译的是不带release的版本，还可以通过-tlsCrt和-tlsKey选项来指定证书文件的位置。
+
+设置好之后，我们就要启用服务了，很简单：
+
+sudo systemctl enable ngrokd
+其中enable是命令表示启用服务（开机会自动启动），其他命令还有disable（禁用服务）、start（启动服务）、restart（重启服务）、stop（停止服务）、status（查看服务状态）等。所以我们就启动服务：
+
+sudo systemctl start ngrokd
+然后通过status查看服务，如果是active (runing)那么就OK了。
+
+配置设备
+
+先把从本机把客户端复制到我们的设备（这里我的是NAS）上。请选择你熟悉的手段。我还是一样使用scp：
+
+scp bin/linux_arm/ngrok 192.168.11.50:~
+接下来我们就要到设备上操作了，同样通过SSH连接到设备上。
+
+首先还是一样的把程序复制到/opt/ngrok目录下（这步同样可根据你的习惯来）：
+
+sudo mkdir /opt/ngrok
+sudo cp ngrok /opt/ngrok/
+然后还是一样的建立服务，因为我的NAS运行的是Debian，还是用systemd，操作和服务器上几乎一样。把如下内容保存到/lib/systemd/system/ngrok.service这个文件：
+
+[Unit]
+Description=ngrok client
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/opt/ngrok/ngrok -config "/opt/ngrok/ngrok.yml" -log "/var/log/ngrok.log" start transmission ssh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+同样还是看ExecStart后面的命令，这里加载了一个配置文件/opt/ngrok/ngrok.yml（之后我们会建立），-log记录日志和服务器端是类似的，最后用start transmission ssh启动了配置文件中的transmisson、ssh两个隧道。
+
+那么配置文件是什么样呢？我们把如下内容保存到/opt/ngrok/ngrok.yml中：
+
+server_addr: example.com:4443
+trust_host_root_certs: false
+tunnels:
+  transmission:
+    remote_port: 9091
+    proto:
+      tcp: 9091
+  ssh:
+    remote_port: 23333
+    proto:
+      tcp: 22
+server_addr就是我们在服务器配置的域名和端口。
+
+tunnels下就是隧道设置。
+
+每一级前面多两个空格缩进的表示是上一级的子项。比如transmission和ssh就是tunnels的子项，remote_port和proto又是他们的子项，以此类推。
+
+transmission和ssh就是隧道的名称，每个对应一个隧道。上面的启动命令中start后面的就是这个。
+
+remote_port表示远程对应的端口。
+
+proto表示协议，支持的有tcp、http和https。因为我没有开启服务器上的http和https，所以我都是用的tcp（TCP也可以支持HTTP或HTTPS，之所以有独立的http和https选项是为了简化设置，直接对应服务器上的相应设置）。
+
+tcp就是协议，后面跟着的是端口号。
+
+所以上面的设置文件就表示，将服务器的9091端口的连接转发到设备的9091端口上，服务器的23333端口的连接转发到设备的22端口上。这样我们就可以通过访问服务器的相应端口来访问设备上的服务了。
+
+2017年10月13日更新：
+
+还可以转发其他IP的端口，方法就是在proto下的tcp（或http、https）后的端口号写成IP地址:端口号的格式（中间是英文冒号）。
+
+如：
+
+      tcp: 192.168.11.1:80
+最后别忘了启用服务：
+
+sudo systemctl enable ngrok
+sudo systemctl start ngrok
+最后
+
+这样，我们就将设备上的9091端口和22端口的对应到了服务器的9091和23333端口上了。比如我要访问设备的SSH，就可以这样：
+
+ssh -p23333 example.com
+这样有个缺点，就是只能建立到运行ngrok的设备的隧道，如果你的设备不能运行ngrok，那就有点麻烦了。 2017年10月13日更新：其实是可以转发其他IP的端口的，详见上面的配置设备一节。
+
+如果不能运行ngrok的设备提供的是HTTP或者HTTPS访问，还有一种变通的方法是在运行ngrok的设备（比如树莓派）上通过nginx的建立代理，代理到不能运行ngrok的设备上。
+
+虽然有局限，但我们已经成功地穿透内网了。只希望IPv6快点到来，让我们不必再处理这些麻烦事。
