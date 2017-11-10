@@ -4,14 +4,31 @@ ngrok一键安装脚本，适用于Centos版本服务器
 git：/usr/local/git  
 go：/usr/local/go  
 ngrok：/usr/local/ngrok 
-
+##################################################################################################################
+A:install-ngrok.sh
 
 wget --no-check-certificate https://github.com/xj888xj/sunnyos/raw/master/install-ngrok.sh -O ./install-ngrok.sh
 
 chmod 500 ./install-ngrok.sh
 
 ./install-ngrok.sh install
+#####################################################################################################################
+B:onekey-ngrok.sh
 
+wget --no-check-certificate https://github.com/xj888xj/sunnyos/raw/master/onekey-ngrok.sh -O ./onekey-ngrok.sh
+
+chmod 500 ./onekey-ngrok.sh
+
+./onekey-ngrok.sh install
+###################################################################################################################
+C:ngrok.sh
+
+wget --no-check-certificate https://github.com/xj888xj/sunnyos/raw/master/ngrok.sh -O ./ngrok.sh
+
+chmod 500 ./ngrok.sh
+
+./ngrok.sh install
+#######################################################################################################################
 脚本地址：
 https://github.com/sunnyos/ngrok
 
