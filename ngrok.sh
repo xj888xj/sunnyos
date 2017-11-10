@@ -201,7 +201,7 @@ case "$num" in
 		read port2
                   echo "tunnelAddr"
 		read port3
-		/usr/local/ngrok/bin/ngrokd -domain=$domain -httpAddr=":$port1" -httpsAddr=":$port2" -tunnelAddr=":$port3"
+		nohup /usr/local/ngrok/bin/ngrokd -domain=$DOMAIN -httpAddr=":$port1" -httpsAddr=":$port2" -tunnelAddr=":$port3" -log="none" &
 	;;
 	[9] )
 		echo "输入启动域名"
