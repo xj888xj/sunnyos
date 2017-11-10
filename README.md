@@ -3,7 +3,12 @@ ngrok一键安装脚本，适用于Centos版本服务器
 默认安装路径  
 git：/usr/local/git  
 go：/usr/local/go  
-ngrok：/usr/local/ngrok  
+ngrok：/usr/local/ngrok 
+
+
+wget --no-check-certificate https://github.com/clangcn/ngrok-one-key-install/raw/master/install_ngrok.sh -O ./install_ngrok.sh
+chmod 500 ./install_ngrok.sh
+./install_ngrok.sh install
 
 脚本地址：
 https://github.com/sunnyos/ngrok
