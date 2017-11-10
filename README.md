@@ -6,9 +6,9 @@ go：/usr/local/go
 ngrok：/usr/local/ngrok 
 
 
-wget --no-check-certificate https://github.com/clangcn/ngrok-one-key-install/raw/master/install_ngrok.sh -O ./install_ngrok.sh
-chmod 500 ./install_ngrok.sh
-./install_ngrok.sh install
+wget --no-check-certificate https://github.com/xj888xj/sunnyos/raw/master/install-ngrok.sh -O ./install-ngrok.sh
+chmod 500 ./install-ngrok.sh
+./install-ngrok.sh install
 
 脚本地址：
 https://github.com/sunnyos/ngrok
