@@ -7,9 +7,9 @@ ngrok：/usr/local/ngrok
 
 #使用说明:
 
-wget https://github.com/xj888xj/sunnyos/blob/master/install-ngrok.sh
-chmod +x install-ngrok.sh
-sh ./install-ngrok.sh  
+wget https://github.com/xj888xj/sunnyos/blob/master/onekey-ngrok.sh
+chmod +x onekey-ngrok.sh
+sh ./onekey-ngrok.sh  
 
 进行选择，安装
 
